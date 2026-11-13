@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}异常价格 · 农批行情{% endblock %}
+{% block content %}
+<h1>异常价格</h1>
+<div class="sub">同市场同品种相对上一开市日报价，涨跌幅绝对值 ≥ {{ threshold }}% 自动标记，等待人工确认或忽略</div>
+
+<div class="panel">
+  <div class="form-row">
+    <a class="btn {% if status=='pending' %}secondary{% endif %}" href="{{ url_for('anomalies_page', status='pending') }}">待处理</a>
+    <a class="btn {% if status=='confirmed' %}secondary{% endif %}" href="{{ url_for('anomalies_page', status='confirmed') }}">已确认</a>
+    <a class="btn {% if status=='dismissed' %}secondary{% endif %}" href="{{ url_for('anomalies_page', status='dismissed') }}">已忽略</a>
+    <a class="btn {% if not status %}secondary{% endif %}" href="{{ url_for('anomalies_page', status='') }}">全部</a>
+  </div>
+  <table>
+    <thead><tr><th>日期</th><th>市场</th><th>品种</th><th>原始品名</th><th>归一价</th>
+      <th>上次价格</th><th>环比</th><th>状态</th><th>备注</th><th>处理</th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+      <tr>
+        <td>{{ a.quote_date }}</td>
+        <td>{{ a.market_name }}</td>
+        <td><strong>{{ a.variety_name }}</strong></td>
+        <td>{{ a.raw_name }} <span class="muted">{{ a.raw_price }}{{ a.raw_unit }}</span></td>
+        <td><strong>{{ a.price_per_kg }}</strong> 元/公斤</td>
+        <td>{{ a.prev_price if a.prev_price is not none else '—' }}</td>
+        <td class="{{ 'up' if a.change_pct > 0 else 'down' }}">{{ '%+.1f'|format(a.change_pct) }}%</td>
+        <td><span class="badge badge-{{ a.status }}">
+          {{ {'pending':'待处理','confirmed':'已确认','dismissed':'已忽略'}[a.status] }}</span></td>
+        <td class="wrap">{{ a.note or '—' }}</td>
+        <td>
+          {% if a.status == 'pending' %}
+          <form method="post" action="{{ url_for('anomalies_handle', anomaly_id=a.id) }}" class="form-row" style="margin:0">
+            <input type="hidden" name="redirect_status" value="{{ status }}">
+            <input name="note" placeholder="处理备注（可选）" style="min-width:130px">
+            <button name="action" value="confirm" class="small danger">确认异常</button>
+            <button name="action" value="dismiss" class="small ghost">忽略</button>
+          </form>
+          {% else %}
+            <span class="muted">{{ a.handled_at }}</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="10" class="empty">没有{{ {'pending':'待处理','confirmed':'已确认','dismissed':'已忽略'}.get(status, '') }}记录</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

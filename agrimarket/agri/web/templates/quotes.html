@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}行情数据 · 农批行情{% endblock %}
+{% block content %}
+<h1>行情数据</h1>
+<div class="sub">所有价格已统一归一为 <strong>元/公斤</strong>；支持走势、市场对比与 Excel 导出</div>
+
+<div class="panel">
+  <form method="get" action="{{ url_for('quotes_page') }}" class="form-row">
+    <div class="field"><label>开始日期</label><input type="date" name="start" value="{{ start }}"></div>
+    <div class="field"><label>结束日期</label><input type="date" name="end" value="{{ end }}"></div>
+    <div class="field"><label>市场</label>
+      <select name="market_code">
+        <option value="">全部市场</option>
+        {% for m in markets %}
+          <option value="{{ m.code }}" {% if market_code==m.code %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label>品种（走势图按它画）</label>
+      <select name="variety_code">
+        {% for v in varieties %}
+          <option value="{{ v.code }}" {% if variety_code==v.code %}selected{% endif %}>
+            {{ v.name }}（{{ v.category }}）
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit">查询</button>
+    <a class="btn secondary" href="{{ url_for('quotes_export', start=start, end=end, market_code=market_code, variety_code=variety_code) }}">⬇ 导出 Excel</a>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-title">{{ variety_code }} 价格走势（元/公斤）</div>
+  {{ chart_svg|safe }}
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-title">{{ variety_code }} 市场间对比（{{ start }} ~ {{ end }}）</div>
+    <table>
+      <thead><tr><th>市场</th><th>区间均价</th><th>最低</th><th>最高</th><th>样本数</th></tr></thead>
+      <tbody>
+      {% for c in compare %}
+        <tr>
+          <td>{{ c.market_name }}</td>
+          <td><strong>{{ c.avg_price }}</strong></td>
+          <td>{{ c.min_price }}</td>
+          <td>{{ c.max_price }}</td>
+          <td>{{ c.n }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">所选区间无该品种数据</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">最新一日全品种横向价（元/公斤）</div>
+    <table>
+      <thead><tr><th>品种</th><th>市场</th><th>归一价</th><th>日期</th></tr></thead>
+      <tbody>
+      {% for r in latest[:24] %}
+        <tr>
+          <td>{{ r.variety_name }} <span class="muted">{{ r.category }}</span></td>
+          <td>{{ r.market_name }}</td>
+          <td><strong>{{ r.price_per_kg }}</strong></td>
+          <td>{{ r.quote_date }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty">暂无数据</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">行情明细（共 {{ total }} 条）</div>
+  <table>
+    <thead><tr><th>日期</th><th>市场</th><th>标准品种</th><th>原始品名</th>
+      <th>原始价</th><th>原始单位</th><th>归一价(元/公斤)</th><th>产地</th><th>等级</th></tr></thead>
+    <tbody>
+    {% for q in rows %}
+      <tr>
+        <td>{{ q.quote_date }}</td>
+        <td>{{ q.market_name }}</td>
+        <td><strong>{{ q.variety_name }}</strong></td>
+        <td>{{ q.raw_name }}</td>
+        <td>{{ q.raw_price }}</td>
+        <td>{{ q.raw_unit }}</td>
+        <td><strong>{{ q.price_per_kg }}</strong></td>
+        <td>{{ q.origin or '—' }}</td>
+        <td>{{ q.grade or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="empty">没有符合条件的记录</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if pages > 1 %}
+  <div class="pager">
+    {% for p in range(1, pages + 1) %}
+      {% if p == page_no %}
+        <span class="cur">{{ p }}</span>
+      {% else %}
+        <a href="{{ url_for('quotes_page', start=start, end=end, market_code=market_code, variety_code=variety_code, page=p) }}">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

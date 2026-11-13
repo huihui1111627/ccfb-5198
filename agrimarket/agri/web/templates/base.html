@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}农批行情采集{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand">🥬 农批行情<span>采集系统</span></div>
+  <nav>
+    <a href="{{ url_for('dashboard') }}" {% if request.endpoint=='dashboard' %}class="active"{% endif %}>📊 仪表盘</a>
+    <a href="{{ url_for('tasks') }}" {% if request.endpoint and request.endpoint.startswith('tasks') %}class="active"{% endif %}>⏱ 采集任务</a>
+    <a href="{{ url_for('mapping_page') }}" {% if request.endpoint and request.endpoint.startswith('mapping') %}class="active"{% endif %}>🔗 品种映射</a>
+    <a href="{{ url_for('quotes_page') }}" {% if request.endpoint and request.endpoint.startswith('quotes') %}class="active"{% endif %}>📈 行情数据</a>
+    <a href="{{ url_for('anomalies_page') }}" {% if request.endpoint and request.endpoint.startswith('anomalies') %}class="active"{% endif %}>⚠️ 异常价格</a>
+    <a href="{{ url_for('settings_page') }}" {% if request.endpoint and request.endpoint.startswith('settings') %}class="active"{% endif %}>⚙️ 设置</a>
+  </nav>
+  <div class="sidebar-foot">本地控制台 · SQLite</div>
+</aside>
+<main class="main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for category, msg in messages %}
+          <div class="flash flash-{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

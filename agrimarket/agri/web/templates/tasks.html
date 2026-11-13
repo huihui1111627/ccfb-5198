@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}采集任务 · 农批行情{% endblock %}
+{% block content %}
+<h1>采集任务</h1>
+<div class="sub">
+  定时采集：{% if sched_enabled %}每天 {{ sched }} 自动执行{% else %}已停用{% endif %}
+  ｜ 休市日（法定节假日/市场闭市）自动跳过并留痕
+</div>
+
+<div class="panel">
+  <div class="panel-title">立即采集</div>
+  <form method="post" action="{{ url_for('tasks_collect') }}" class="form-row">
+    <div class="field"><label>市场</label>
+      <select name="market_code">
+        <option value="">全部市场</option>
+        {% for m in markets %}<option value="{{ m.code }}">{{ m.code }} · {{ m.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field"><label>日期（留空=今天）</label><input type="date" name="quote_date"></div>
+    <button type="submit">开始采集</button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-title">漏采补采</div>
+  <form method="post" action="{{ url_for('tasks_backfill') }}" class="form-row">
+    <div class="field"><label>市场</label>
+      <select name="market_code">
+        <option value="">全部市场</option>
+        {% for m in markets %}<option value="{{ m.code }}">{{ m.code }} · {{ m.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field"><label>回看天数</label><input type="number" name="days" value="{{ backfill_days }}" min="1" max="60"></div>
+    <div class="field checkbox-field"><label><input type="checkbox" name="force" value="1"> 强制重采已成功日期</label></div>
+    <button type="submit" class="secondary">开始补采</button>
+  </form>
+  <p class="muted">默认只补没有成功记录的市场日；休市日不产生数据，会以「休市」状态记录。</p>
+</div>
+
+<div class="panel">
+  <div class="panel-title">采集记录（最近 80 条）</div>
+  <table>
+    <thead><tr><th>日期</th><th>市场</th><th>状态</th><th>抓到</th><th>入库</th><th>休市原因</th><th>说明</th><th>开始时间</th></tr></thead>
+    <tbody>
+    {% for r in runs %}
+      <tr>
+        <td>{{ r.quote_date }}</td>
+        <td>{{ r.market_name }}</td>
+        <td><span class="badge badge-{{ r.status }}">{{ {'success':'成功','closed':'休市','failed':'失败','partial':'部分'}[r.status] }}</span></td>
+        <td>{{ r.fetched_count }}</td>
+        <td>{{ r.saved_count }}</td>
+        <td>{{ r.closed_reason or '—' }}</td>
+        <td class="wrap">{{ r.message or '' }}</td>
+        <td>{{ r.started_at }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="empty">暂无记录</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

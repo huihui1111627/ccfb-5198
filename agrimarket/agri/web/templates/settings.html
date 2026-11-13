@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}设置 · 农批行情{% endblock %}
+{% block content %}
+<h1>系统设置</h1>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-title">采集与告警参数</div>
+    <form method="post" action="{{ url_for('settings_save') }}">
+      <div class="form-row">
+        <div class="field checkbox-field">
+          <label><input type="checkbox" name="scheduler_enabled" value="1"
+            {% if settings.scheduler_enabled == '1' %}checked{% endif %}> 启用每日定时采集</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>定时采集 时 (0-23)</label>
+          <input type="number" name="scheduler_hour" min="0" max="23" value="{{ settings.scheduler_hour }}"></div>
+        <div class="field"><label>分 (0-59)</label>
+          <input type="number" name="scheduler_minute" min="0" max="59" value="{{ settings.scheduler_minute }}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>异常突变阈值 (%)</label>
+          <input type="number" name="anomaly_pct" min="1" max="500" value="{{ settings.anomaly_pct }}"></div>
+        <div class="field"><label>补采默认回看天数</label>
+          <input type="number" name="backfill_days" min="1" max="60" value="{{ settings.backfill_days }}"></div>
+        <div class="field"><label>明细分页条数</label>
+          <input type="number" name="page_size" min="5" max="200" value="{{ settings.page_size }}"></div>
+      </div>
+      <button type="submit">保存设置</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">休市日历（法定节假日 + 自定义）</div>
+    <form method="post" action="{{ url_for('settings_add_holiday') }}" class="form-row">
+      <div class="field"><label>休市日期</label><input type="date" name="d" required></div>
+      <div class="field"><label>名称</label><input name="name" placeholder="如 市场盘点"></div>
+      <button type="submit" class="secondary">登记休市</button>
+    </form>
+    <table>
+      <thead><tr><th>日期</th><th>名称</th><th></th></tr></thead>
+      <tbody>
+      {% for h in holidays %}
+        <tr>
+          <td>{{ h.d }}</td>
+          <td>{{ h.name }}</td>
+          <td>
+            <form method="post" action="{{ url_for('settings_delete_holiday', d=h.d) }}" class="inline"
+                  onsubmit="return confirm('删除该休市日？')">
+              <button class="small ghost">删除</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">包装规格维护（箱/件 → 公斤，按市场+品种）</div>
+  <table>
+    <thead><tr><th>市场</th><th>品种</th><th>包装单位</th><th>每包净重(公斤)</th><th></th></tr></thead>
+    <tbody>
+    {% for s in specs %}
+      <tr>
+        <form method="post" action="{{ url_for('settings_update_spec', spec_id=s.id) }}" class="inline">
+          <td>
+            {% for m in markets %}{% if m.code == s.market_code %}{{ m.name }}{% endif %}{% endfor %}
+          </td>
+          <td>{{ s.variety_name }}</td>
+          <td><select name="pack_unit" style="min-width:70px">
+            <option {% if s.pack_unit=='箱' %}selected{% endif %}>箱</option>
+            <option {% if s.pack_unit=='件' %}selected{% endif %}>件</option>
+          </select></td>
+          <td><input type="number" step="0.1" min="0.1" name="spec_kg" value="{{ s.spec_kg }}" style="min-width:90px"></td>
+          <td><button class="small">更新</button></td>
+        </form>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="empty">暂无包装规格，可在「品种映射」页新增</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">换算公式：归一价(元/公斤) = 原始整包价 ÷ 每包净重。改完规格后对相关日期执行一次「强制重采」即可刷新历史数据。</p>
+</div>
+{% endblock %}

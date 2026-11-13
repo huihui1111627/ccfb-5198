@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}仪表盘 · 农批行情{% endblock %}
+{% block content %}
+<h1>仪表盘</h1>
+<div class="sub">数据最新日期：{{ latest_day or '暂无' }} ｜ 今天 {{ page_today }}</div>
+
+<div class="cards">
+  <div class="card ok"><div class="label">行情记录总数</div><div class="num">{{ totals.quotes }}</div></div>
+  <div class="card"><div class="label">启用市场</div><div class="num">{{ totals.markets }}</div></div>
+  <div class="card"><div class="label">标准品种</div><div class="num">{{ totals.varieties }}</div></div>
+  <div class="card warn"><div class="label">待处理异常</div><div class="num">{{ totals.pending }}</div></div>
+  <div class="card err"><div class="label">未识别品名</div><div class="num">{{ totals.unmapped }}</div></div>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-title">最近采集任务</div>
+    <table>
+      <thead><tr><th>日期</th><th>市场</th><th>状态</th><th>入库</th><th>说明</th></tr></thead>
+      <tbody>
+      {% for r in recent_runs %}
+        <tr>
+          <td>{{ r.quote_date }}</td>
+          <td>{{ r.market_name }}</td>
+          <td><span class="badge badge-{{ r.status }}">{{ {'success':'成功','closed':'休市','failed':'失败','partial':'部分'}[r.status] }}</span></td>
+          <td>{{ r.saved_count }}/{{ r.fetched_count }}</td>
+          <td class="wrap">{{ r.message or '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">还没有采集记录，去「采集任务」页跑一次</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">待确认异常价格</div>
+    <table>
+      <thead><tr><th>日期</th><th>市场</th><th>品种</th><th>环比</th><th></th></tr></thead>
+      <tbody>
+      {% for a in pending_rows %}
+        <tr>
+          <td>{{ a.quote_date }}</td>
+          <td>{{ a.market_name }}</td>
+          <td>{{ a.variety_name }}</td>
+          <td class="{{ 'up' if a.change_pct > 0 else 'down' }}">{{ '%+.1f'|format(a.change_pct) }}%</td>
+          <td><a class="btn small secondary" href="{{ url_for('anomalies_page', status='pending') }}">处理</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">暂无待处理异常 🎉</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
